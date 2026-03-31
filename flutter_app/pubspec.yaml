@@ -1,0 +1,35 @@
+name: titan_app
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+
+  # UI + charts
+  fl_chart: ^0.66.2
+
+  # Sensors and device
+  health: ^9.0.0
+  flutter_blue_plus: ^1.31.12
+  camera: ^0.10.5+9
+
+  # State + utils
+  provider: ^6.1.2
+  http: ^1.2.0
+  dio: ^5.4.0
+  sqflite: ^2.3.2
+  path: ^1.9.0
+  shared_preferences: ^2.2.2
+  uuid: ^4.3.3
+  share_plus: ^7.2.1
+  path_provider: ^2.1.2
+  flutter_highlight: ^0.7.0
+  flutter_tts: ^3.8.5
+
+flutter:
+  uses-material-design: true

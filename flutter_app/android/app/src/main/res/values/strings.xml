@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Titan SMRT</string>
+    <string name="app_description">Smart fitness tracking with AI-powered coaching and personalized insights.</string>
+    <string name="app_tagline">Train Smarter, Not Harder</string>
+    
+    <!-- Features -->
+    <string name="feature_workout_logging">Smart workout logging with 3-click UX</string>
+    <string name="feature_ai_coaching">AI-powered form analysis and coaching</string>
+    <string name="feature_offline">Offline-first design with automatic sync</string>
+    <string name="feature_analytics">Advanced analytics and progress tracking</string>
+    <string name="feature_library">Comprehensive exercise and routine library</string>
+    <string name="feature_nutrition">Daily nutrition and macro tracking</string>
+    
+    <!-- Subscription -->
+    <string name="subscription_free">Free</string>
+    <string name="subscription_pro">Pro</string>
+    <string name="subscription_trial">7-Day Free Trial</string>
+    <string name="subscription_price">$9.99/month</string>
+    
+    <!-- UI -->
+    <string name="smart_start">Smart Start</string>
+    <string name="quick_start">Quick Start</string>
+    <string name="finish_set">Finish Set</string>
+    <string name="end_session">End Session</string>
+    <string name="workout_complete">Workout Complete!</string>
+    <string name="new_pr">New Personal Record!</string>
+    
+    <!-- Errors -->
+    <string name="error_connection">No internet connection</string>
+    <string name="error_server">Server error. Please try again.</string>
+    <string name="error_auth">Authentication failed. Please log in again.</string>
+    <string name="error_sync">Sync failed. Data saved locally.</string>
+    
+    <!-- Success -->
+    <string name="success_login">Welcome back!</string>
+    <string name="success_save">Saved successfully</string>
+    <string name="success_sync">Synced successfully</string>
+</resources>
