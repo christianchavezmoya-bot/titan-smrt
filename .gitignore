@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Flutter
+.dart_tool/
+.build/
+.packages
+.pub-cache/
+.pub/
+.flutter-plugins-dependencies/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+*.swp
+*.swo
+*.code-workspace
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite
+
+# Temporary files
+*.tmp
+*.temp
