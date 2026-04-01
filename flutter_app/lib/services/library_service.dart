@@ -78,6 +78,7 @@ class ExerciseDto {
     required this.id,
     required this.name,
     required this.muscleGroup,
+    this.equipment,
     this.mediaUrl,
     this.mediaType,
   });
@@ -85,6 +86,7 @@ class ExerciseDto {
   final String id;
   final String name;
   final String? muscleGroup;
+  final String? equipment;
   final String? mediaUrl;
   final String? mediaType;
 
@@ -93,6 +95,7 @@ class ExerciseDto {
       id: json['id'] as String,
       name: json['name'] as String,
       muscleGroup: json['muscle_group'] as String?,
+      equipment: json['equipment'] as String?,
       mediaUrl: json['media_url'] as String?,
       mediaType: json['media_type'] as String?,
     );
