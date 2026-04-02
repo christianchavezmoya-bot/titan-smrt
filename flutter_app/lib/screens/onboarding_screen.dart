@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/profile_controller.dart';
 import '../services/profile_service.dart';
 import '../services/settings_controller.dart';
@@ -57,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await settings.updateGoalType(_goal);
       await settings.updateGoalLevel(_level);
       await settings.updateEquipmentAccess(_equipment);
-      Navigator.pop(context);
+      // AuthGate rebuilds automatically when profile notifies listeners
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to save profile.')),
@@ -66,10 +65,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _skip() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_skipped', true);
-    if (!mounted) return;
-    Navigator.pop(context);
+    final controller = context.read<ProfileController>();
+    final profile = controller.profile;
+    if (profile == null) return;
+    // Save minimal profile so isComplete passes and AuthGate routes to AppScaffold
+    final updated = UserProfile(
+      userId: profile.userId,
+      goalType: 'strength',
+      experienceLevel: 'beginner',
+      equipmentAccess: 'full_gym',
+      trainingDaysPerWeek: 3,
+    );
+    await controller.save(updated);
   }
 
   @override
@@ -111,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _sex,
+                  initialValue: _sex,
                   decoration: const InputDecoration(labelText: 'Sex (optional)'),
                   items: const [
                     DropdownMenuItem(value: 'unspecified', child: Text('Prefer not to say')),
@@ -141,7 +148,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             content: Column(
               children: [
                 DropdownButtonFormField<String>(
-                  value: _goal,
+                  initialValue: _goal,
                   decoration: const InputDecoration(labelText: 'Primary goal'),
                   items: const [
                     DropdownMenuItem(value: 'strength', child: Text('Strength')),
@@ -154,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _level,
+                  initialValue: _level,
                   decoration: const InputDecoration(labelText: 'Experience level'),
                   items: const [
                     DropdownMenuItem(value: 'beginner', child: Text('Beginner')),
@@ -165,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _equipment,
+                  initialValue: _equipment,
                   decoration: const InputDecoration(labelText: 'Equipment access'),
                   items: const [
                     DropdownMenuItem(value: 'full_gym', child: Text('Full gym')),

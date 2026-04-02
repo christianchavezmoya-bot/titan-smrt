@@ -11,7 +11,6 @@ import 'services/profile_service.dart';
 import 'services/settings_controller.dart';
 import 'services/sync_controller.dart';
 import 'theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TitanApp extends StatelessWidget {
   const TitanApp({
@@ -33,7 +32,7 @@ class TitanApp extends StatelessWidget {
         ChangeNotifierProvider<AuthController>.value(value: authController),
         ProxyProvider<AuthController, ApiClient>(
           update: (_, auth, previous) {
-            final client = previous ?? ApiClient(baseUrl: 'http://192.168.1.100:8000');
+            final client = previous ?? ApiClient(baseUrl: 'http://10.7.15.96:8000');
             client.token = auth.token;
             return client;
           },
@@ -79,30 +78,17 @@ class AuthGate extends StatelessWidget {
       profile.clear();
       return const AuthScreen();
     }
-    if (!profile.isReady && !profile.isLoading) {
+    if (profile.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!profile.isReady) {
       profile.load();
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return FutureBuilder<bool>(
-      future: _hasSkippedOnboarding(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final skipped = snapshot.data ?? false;
-        if (skipped) {
-          return const AppScaffold();
-        }
-        if (profile.profile == null || !(profile.profile?.isComplete ?? false)) {
-          return const OnboardingScreen();
-        }
-        return const AppScaffold();
-      },
-    );
+    if (profile.profile == null || !(profile.profile?.isComplete ?? false)) {
+      return const OnboardingScreen();
+    }
+    return const AppScaffold();
   }
 }
 
-Future<bool> _hasSkippedOnboarding() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('onboarding_skipped') ?? false;
-}
