@@ -38,6 +38,10 @@ class RoutineExerciseResponse(BaseModel):
     exercise_name: str
     display_order: int
     default_sets: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    muscle_group: Optional[str] = None
+    equipment: Optional[str] = None
 
 
 class RoutineExerciseDefaultSetsUpdate(BaseModel):

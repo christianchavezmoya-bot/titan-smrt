@@ -9,6 +9,7 @@ import '../services/library_service.dart';
 import '../services/local_store.dart';
 import '../services/offline_library_service.dart';
 import '../widgets/staggered_fade_in.dart';
+import 'exercises_screen.dart' show showExerciseDetail;
 
 class RoutineDetailScreen extends StatefulWidget {
   const RoutineDetailScreen({super.key, required this.routineId, required this.title});
@@ -184,20 +185,35 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                           Card(
                             key: ValueKey(item.id),
                             child: ListTile(
+                              leading: GestureDetector(
+                                onTap: () => showExerciseDetail(
+                                  context,
+                                  name: item.exerciseName,
+                                  muscleGroup: item.muscleGroup,
+                                  equipment: item.equipment,
+                                  mediaUrl: item.mediaUrl,
+                                  mediaType: item.mediaType,
+                                ),
+                                child: _RoutineExerciseThumb(
+                                  url: item.mediaUrl,
+                                  type: item.mediaType,
+                                ),
+                              ),
                               title: Text(item.exerciseName),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Order ${item.displayOrder}'),
+                                  if (item.muscleGroup != null)
+                                    Text(item.muscleGroup!,
+                                        style: const TextStyle(fontSize: 11)),
                                   if ((item.defaultSets ?? '').isNotEmpty)
                                     Text(
                                       _prettyJson(item.defaultSets!),
-                                      maxLines: 3,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                 ],
                               ),
-                              leading: const Icon(Icons.drag_handle),
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: () async {
@@ -557,4 +573,35 @@ String? _validateDefaultSetsSchema(Object? decoded) {
     }
   }
   return null;
+}
+
+class _RoutineExerciseThumb extends StatelessWidget {
+  const _RoutineExerciseThumb({this.url, this.type});
+  final String? url;
+  final String? type;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return const CircleAvatar(
+        backgroundColor: Colors.white12,
+        child: Icon(Icons.fitness_center, size: 18, color: Colors.white54),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Image.network(
+          url!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: Colors.white12,
+            child: const Icon(Icons.fitness_center, size: 18, color: Colors.white54),
+          ),
+        ),
+      ),
+    );
+  }
 }

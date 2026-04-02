@@ -127,6 +127,10 @@ def list_routine_exercises(
             exercise_name=exercise.name,
             display_order=re.display_order or 0,
             default_sets=re.default_sets,
+            media_url=exercise.media_url,
+            media_type=exercise.media_type,
+            muscle_group=exercise.muscle_group,
+            equipment=exercise.equipment,
         )
         for re, exercise in exercises
     ]

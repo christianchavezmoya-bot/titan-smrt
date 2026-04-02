@@ -125,6 +125,10 @@ class RoutineExerciseDto {
     required this.exerciseName,
     required this.displayOrder,
     this.defaultSets,
+    this.mediaUrl,
+    this.mediaType,
+    this.muscleGroup,
+    this.equipment,
   });
 
   final String id;
@@ -132,6 +136,10 @@ class RoutineExerciseDto {
   final String exerciseName;
   final int displayOrder;
   final String? defaultSets;
+  final String? mediaUrl;
+  final String? mediaType;
+  final String? muscleGroup;
+  final String? equipment;
 
   factory RoutineExerciseDto.fromJson(Map<String, dynamic> json) {
     return RoutineExerciseDto(
@@ -140,6 +148,10 @@ class RoutineExerciseDto {
       exerciseName: json['exercise_name'] as String,
       displayOrder: json['display_order'] as int? ?? 0,
       defaultSets: json['default_sets'] as String?,
+      mediaUrl: json['media_url'] as String?,
+      mediaType: json['media_type'] as String?,
+      muscleGroup: json['muscle_group'] as String?,
+      equipment: json['equipment'] as String?,
     );
   }
 }

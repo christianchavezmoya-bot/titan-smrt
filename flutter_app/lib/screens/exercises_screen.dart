@@ -340,7 +340,7 @@ class _ExerciseTile extends StatelessWidget {
             ? Text(equipment!, style: const TextStyle(fontSize: 12))
             : null,
         trailing: const Icon(Icons.chevron_right, size: 18),
-        onTap: () => _showExerciseDetail(
+        onTap: () => showExerciseDetail(
           context,
           name: name,
           muscleGroup: muscleGroup,
@@ -391,7 +391,7 @@ class _MuscleGroupHeader extends StatelessWidget {
 
 // ── Exercise detail sheet ────────────────────────────────────────────────────
 
-void _showExerciseDetail(
+void showExerciseDetail(
   BuildContext context, {
   required String name,
   String? muscleGroup,
