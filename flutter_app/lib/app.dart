@@ -32,7 +32,7 @@ class TitanApp extends StatelessWidget {
         ChangeNotifierProvider<AuthController>.value(value: authController),
         ProxyProvider<AuthController, ApiClient>(
           update: (_, auth, previous) {
-            final client = previous ?? ApiClient(baseUrl: 'http://10.7.15.96:8000');
+            final client = previous ?? ApiClient(baseUrl: 'http://192.168.1.103:8000');
             client.token = auth.token;
             return client;
           },

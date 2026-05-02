@@ -12,7 +12,7 @@ void main() {
 
 Future<void> _bootstrap() async {
   final store = await LocalStoreSqlite.open();
-  final authController = AuthController(AuthService('http://10.7.15.96:8000'));
+  final authController = AuthController(AuthService('http://192.168.1.103:8000'));
   await authController.init();
   final settingsController = SettingsController();
   await settingsController.init();

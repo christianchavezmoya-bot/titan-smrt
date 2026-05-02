@@ -1,0 +1,295 @@
+# Titan Super Fitness App - Docker Compose
+# Development/Local environment configuration
+
+version: '3.8'
+
+services:
+  # ============ API GATEWAY ============
+  api-gateway:
+    image: kong:latest
+    container_name: titan-gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    ports:
+      - "8000:8000"   # Proxy
+      - "8443:8443"   # Proxy SSL
+      - "8001:8001"   # Admin API
+    networks:
+      - titan-network
+    depends_on:
+      - user-auth
+      - tracking-telemetry
+      - ai-coach
+      - social-community
+
+  # ============ MICROSERVICES ============
+  
+  # User Auth Service (Go)
+  user-auth:
+    build:
+      context: ../services/user-auth
+      dockerfile: Dockerfile
+    container_name: titan-user-auth
+    environment:
+      - DATABASE_URL=postgres://titan:password@postgres-auth:5432/titan_auth
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-auth
+    networks:
+      - titan-network
+
+  # Tracking Telemetry Service (Go)
+  tracking-telemetry:
+    build:
+      context: ../services/tracking-telemetry
+      dockerfile: Dockerfile
+    container_name: titan-telemetry
+    environment:
+      - DATABASE_URL=postgres://titan:password@timescaledb:5432/titan_telemetry
+      - KAFKA_BROKERS=kafka:9092
+      - PORT=8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      - timescaledb
+      - kafka
+    networks:
+      - titan-network
+
+  # AI Coach Service (Python)
+  ai-coach:
+    build:
+      context: ../services/ai-coach
+      dockerfile: Dockerfile
+    container_name: titan-ai-coach
+    environment:
+      - DATABASE_URL=postgres://titan:password@postgres-main:5432/titan_ai
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PORT=8083
+    ports:
+      - "8083:8083"
+    networks:
+      - titan-network
+
+  # Social Community Service (Node.js)
+  social-community:
+    build:
+      context: ../services/social-community
+      dockerfile: Dockerfile
+    container_name: titan-social
+    environment:
+      - CASSANDRA_HOSTS=cassandra
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - PORT=8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      - cassandra
+      - redis
+    networks:
+      - titan-network
+
+  # Billing Subscription Service (Python)
+  billing-subscription:
+    build:
+      context: ../services/billing-subscription
+      dockerfile: Dockerfile
+    container_name: titan-billing
+    environment:
+      - DATABASE_URL=postgres://titan:password@postgres-main:5432/titan_billing
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PORT=8084
+    ports:
+      - "8084:8084"
+    networks:
+      - titan-network
+
+  # ============ DATABASES ============
+  
+  # PostgreSQL (Users, Billing)
+  postgres-main:
+    image: postgres:16-alpine
+    container_name: titan-postgres-main
+    environment:
+      POSTGRES_USER: titan
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: titan_main
+    volumes:
+      - postgres-main-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - titan-network
+
+  # PostgreSQL (Auth)
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: titan-postgres-auth
+    environment:
+      POSTGRES_USER: titan
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: titan_auth
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks:
+      - titan-network
+
+  # TimescaleDB (Time-series telemetry)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: titan-timescaledb
+    environment:
+      POSTGRES_USER: titan
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: titan_telemetry
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - titan-network
+
+  # Redis (Caching, Sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: titan-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - titan-network
+
+  # Cassandra (Social feeds)
+  cassandra:
+    image: cassandra:4.1
+    container_name: titan-cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    networks:
+      - titan-network
+
+  # Elasticsearch (Search)
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: titan-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - titan-network
+
+  # MongoDB (Workout content)
+  mongodb:
+    image: mongo:7
+    container_name: titan-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - titan-network
+
+  # ClickHouse (Analytics)
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: titan-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    networks:
+      - titan-network
+
+  # ============ EVENT STREAMING ============
+  
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: titan-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - titan-network
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: titan-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - titan-network
+
+  # ============ OBSERVABILITY ============
+  
+  # Prometheus (Metrics)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: titan-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - titan-network
+
+  # Grafana (Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: titan-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - titan-network
+
+# ============ NETWORKS ============
+networks:
+  titan-network:
+    driver: bridge
+
+# ============ VOLUMES ============
+volumes:
+  postgres-main-data:
+  postgres-auth-data:
+  timescaledb-data:
+  redis-data:
+  cassandra-data:
+  elasticsearch-data:
+  mongodb-data:
+  clickhouse-data:
+  kafka-data:
+  grafana-data:

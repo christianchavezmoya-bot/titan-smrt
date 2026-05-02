@@ -1,0 +1,335 @@
+# Titan Super Fitness App - Kubernetes Deployments
+# Base configuration for production deployment
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: titan
+---
+# ============ CONFIG MAPS ============
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: titan-config
+  namespace: titan
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+---
+# ============ SECRETS ============
+apiVersion: v1
+kind: Secret
+metadata:
+  name: titan-secrets
+  namespace: titan
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://titan:password@postgres:5432/titan"
+  JWT_SECRET: "change-me-in-production"
+  STRIPE_SECRET_KEY: "sk_live_xxx"
+---
+# ============ USER AUTH SERVICE ============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-auth
+  namespace: titan
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: user-auth
+  template:
+    metadata:
+      labels:
+        app: user-auth
+    spec:
+      containers:
+      - name: user-auth
+        image: titan/user-auth:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: titan-config
+        - secretRef:
+            name: titan-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-auth
+  namespace: titan
+spec:
+  selector:
+    app: user-auth
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# ============ TRACKING TELEMETRY SERVICE ============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracking-telemetry
+  namespace: titan
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tracking-telemetry
+  template:
+    metadata:
+      labels:
+        app: tracking-telemetry
+    spec:
+      containers:
+      - name: tracking-telemetry
+        image: titan/tracking-telemetry:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: KAFKA_BROKERS
+          value: "kafka:9092"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking-telemetry
+  namespace: titan
+spec:
+  selector:
+    app: tracking-telemetry
+  ports:
+  - port: 80
+    targetPort: 8081
+---
+# ============ AI COACH SERVICE ============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-coach
+  namespace: titan
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-coach
+  template:
+    metadata:
+      labels:
+        app: ai-coach
+    spec:
+      containers:
+      - name: ai-coach
+        image: titan/ai-coach:latest
+        ports:
+        - containerPort: 8083
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-coach
+  namespace: titan
+spec:
+  selector:
+    app: ai-coach
+  ports:
+  - port: 80
+    targetPort: 8083
+---
+# ============ SOCIAL COMMUNITY SERVICE ============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: social-community
+  namespace: titan
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: social-community
+  template:
+    metadata:
+      labels:
+        app: social-community
+    spec:
+      containers:
+      - name: social-community
+        image: titan/social-community:latest
+        ports:
+        - containerPort: 8082
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: social-community
+  namespace: titan
+spec:
+  selector:
+    app: social-community
+  ports:
+  - port: 80
+    targetPort: 8082
+---
+# ============ BILLING SERVICE ============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-subscription
+  namespace: titan
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: billing-subscription
+  template:
+    metadata:
+      labels:
+        app: billing-subscription
+    spec:
+      containers:
+      - name: billing-subscription
+        image: titan/billing-subscription:latest
+        ports:
+        - containerPort: 8084
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-subscription
+  namespace: titan
+spec:
+  selector:
+    app: billing-subscription
+  ports:
+  - port: 80
+    targetPort: 8084
+---
+# ============ INGRESS ============
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: titan-ingress
+  namespace: titan
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - api.titan.app
+    secretName: titan-tls
+  rules:
+  - host: api.titan.app
+    http:
+      paths:
+      - path: /api/v1/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: user-auth
+            port:
+              number: 80
+      - path: /api/v1/telemetry
+        pathType: Prefix
+        backend:
+          service:
+            name: tracking-telemetry
+            port:
+              number: 80
+      - path: /api/v1/ai
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-coach
+            port:
+              number: 80
+      - path: /api/v1/social
+        pathType: Prefix
+        backend:
+          service:
+            name: social-community
+            port:
+              number: 80
+      - path: /api/v1/billing
+        pathType: Prefix
+        backend:
+          service:
+            name: billing-subscription
+            port:
+              number: 80
+---
+# ============ HPA ============
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: user-auth-hpa
+  namespace: titan
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: user-auth
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
